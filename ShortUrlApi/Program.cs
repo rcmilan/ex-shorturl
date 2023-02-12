@@ -46,11 +46,11 @@ app.MapPost("/p", async ([FromServices] IConnectionMultiplexer redis, PostShortU
 
     var expiration = input.Expiration > DateTime.Now ?
         input.Expiration.Subtract(DateTime.Now) :
-        TimeSpan.FromSeconds(1);
-
-    var cacheDb = redis.GetDatabase();
+        TimeSpan.FromHours(1); // como padrão deixa acessivél por 1h
 
     var urlOutput = new PostShortUrlOutput(input.Target);
+
+    var cacheDb = redis.GetDatabase();
 
     await cacheDb.StringSetAsync(urlOutput.NewUrl, input.Target, expiration);
 
