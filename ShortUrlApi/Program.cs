@@ -28,17 +28,15 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.MapGet("/g/{url}", async ([FromServices] IConnectionMultiplexer redis, string url) =>
+app.MapGet("/g/{urlPath}", async ([FromServices] IConnectionMultiplexer redis, string urlPath) =>
 {
     var cacheDb = redis.GetDatabase();
 
-    string decodedUrl = Uri.UnescapeDataString(url);
-
-    var redisValue = await cacheDb.StringGetAsync(decodedUrl);
+    var redisValue = await cacheDb.StringGetAsync(urlPath);
 
     return redisValue.HasValue ?
         Results.Redirect(redisValue.ToString(), true, true) :
-        Results.NotFound(url);
+        Results.NotFound(urlPath);
 })
 .WithName("GetURL")
 .WithOpenApi();
@@ -49,7 +47,7 @@ app.MapPost("/p", async ([FromServices] IConnectionMultiplexer redis, [FromServi
 
     var expiration = input.Expiration > DateTime.Now ?
         input.Expiration.Subtract(DateTime.Now) :
-        TimeSpan.FromHours(1); // como padrão deixa acessivél por 1h
+        TimeSpan.FromHours(1); // como padrão deixa acessível por 1h
 
     var urlOutput = new PostShortUrlOutput(shortUrlService.Generate());
 
@@ -60,6 +58,6 @@ app.MapPost("/p", async ([FromServices] IConnectionMultiplexer redis, [FromServi
     return Results.Ok(urlOutput);
 })
 .WithName("PostURL")
-.WithOpenApi(); ;
+.WithOpenApi();
 
 app.Run();
