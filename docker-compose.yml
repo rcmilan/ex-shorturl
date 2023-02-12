@@ -1,0 +1,25 @@
+version: "3.4"
+
+services:
+  shorturlapi:
+    image: ${DOCKER_REGISTRY-}shorturlapi
+    build:
+      context: .
+      dockerfile: ShortUrlApi/Dockerfile
+    depends_on:
+      - redis
+    networks:
+      - default
+
+  redis:
+    image: redis
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - default
+
+networks:
+  default:
+    driver: bridge
+    name: shorturlnetwork
