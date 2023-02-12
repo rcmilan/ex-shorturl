@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using ShortUrlApi.DTOs;
+using ShortUrlApi.Services;
 using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,6 +10,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Redis
 var multiplexer = ConnectionMultiplexer.Connect(new ConfigurationOptions { EndPoints = { builder.Configuration.GetConnectionString("Redis") } });
 builder.Services.AddSingleton<IConnectionMultiplexer>(multiplexer);
+
+builder.Services.AddTransient<IShortUrlService, ShortUrlService>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -40,7 +43,7 @@ app.MapGet("/g/{url}", async ([FromServices] IConnectionMultiplexer redis, strin
 .WithName("GetURL")
 .WithOpenApi();
 
-app.MapPost("/p", async ([FromServices] IConnectionMultiplexer redis, PostShortUrlInput input) =>
+app.MapPost("/p", async ([FromServices] IConnectionMultiplexer redis, [FromServices] IShortUrlService shortUrlService, PostShortUrlInput input) =>
 {
     if (!input.IsValidUri()) return Results.Problem($"Invalid Target URI [{input.Target}]");
 
@@ -48,7 +51,7 @@ app.MapPost("/p", async ([FromServices] IConnectionMultiplexer redis, PostShortU
         input.Expiration.Subtract(DateTime.Now) :
         TimeSpan.FromHours(1); // como padrão deixa acessivél por 1h
 
-    var urlOutput = new PostShortUrlOutput(input.Target);
+    var urlOutput = new PostShortUrlOutput(shortUrlService.Generate());
 
     var cacheDb = redis.GetDatabase();
 
