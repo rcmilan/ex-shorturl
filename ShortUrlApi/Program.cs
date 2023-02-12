@@ -42,19 +42,17 @@ app.MapGet("/g/{url}", async ([FromServices] IConnectionMultiplexer redis, strin
 
 app.MapPost("/p", async ([FromServices] IConnectionMultiplexer redis, PostShortUrlInput input) =>
 {
-    if (!Uri.TryCreate(input.Origin, UriKind.Absolute, out Uri uriResult) ||
-        uriResult.Scheme != Uri.UriSchemeHttp && uriResult.Scheme != Uri.UriSchemeHttps)
-        return Results.Problem("Invalid URI");
-
-    var cacheDb = redis.GetDatabase();
-
-    var urlOutput = new PostShortUrlOutput(input.Origin);
+    if (!input.IsValidUri()) return Results.Problem($"Invalid Target URI [{input.Target}]");
 
     var expiration = input.Expiration > DateTime.Now ?
         input.Expiration.Subtract(DateTime.Now) :
         TimeSpan.FromSeconds(1);
 
-    await cacheDb.StringSetAsync(urlOutput.NewUrl, input.Origin, expiration);
+    var cacheDb = redis.GetDatabase();
+
+    var urlOutput = new PostShortUrlOutput(input.Target);
+
+    await cacheDb.StringSetAsync(urlOutput.NewUrl, input.Target, expiration);
 
     return Results.Ok(urlOutput);
 })
