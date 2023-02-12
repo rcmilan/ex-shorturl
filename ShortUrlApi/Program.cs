@@ -33,24 +33,30 @@ app.MapGet("/g/{url}", async ([FromServices] IConnectionMultiplexer redis, strin
 
     var redisValue = await cacheDb.StringGetAsync(decodedUrl);
 
-    var result = Results.Redirect(redisValue.ToString(), true, true);
-
-    return result;
+    return redisValue.HasValue ?
+        Results.Redirect(redisValue.ToString(), true, true) :
+        Results.NotFound(url);
 })
 .WithName("GetURL")
 .WithOpenApi();
 
 app.MapPost("/p", async ([FromServices] IConnectionMultiplexer redis, PostShortUrlInput input) =>
 {
+    if (!Uri.TryCreate(input.Origin, UriKind.Absolute, out Uri uriResult) ||
+        uriResult.Scheme != Uri.UriSchemeHttp && uriResult.Scheme != Uri.UriSchemeHttps)
+        return Results.Problem("Invalid URI");
+
     var cacheDb = redis.GetDatabase();
 
     var urlOutput = new PostShortUrlOutput(input.Origin);
 
-    var expiration = input.Expiration.Subtract(DateTime.Now);
+    var expiration = input.Expiration > DateTime.Now ?
+        input.Expiration.Subtract(DateTime.Now) :
+        TimeSpan.FromSeconds(1);
 
     await cacheDb.StringSetAsync(urlOutput.NewUrl, input.Origin, expiration);
 
-    return urlOutput;
+    return Results.Ok(urlOutput);
 })
 .WithName("PostURL")
 .WithOpenApi(); ;
