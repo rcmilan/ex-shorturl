@@ -16,9 +16,11 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.MapGet("/r/", () =>
+app.MapGet("/g", () =>
 {
-    return 0;
+    var result = Results.Redirect("https://www.google.com", true, true);
+
+    return result;
 })
 .WithName("GetURL")
 .WithOpenApi();
