@@ -1,3 +1,5 @@
+using ShortUrlApi.DTOs;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -24,5 +26,14 @@ app.MapGet("/g", () =>
 })
 .WithName("GetURL")
 .WithOpenApi();
+
+app.MapPost("/p", (PostShortUrlInput input) =>
+{
+    var urlOutput = new PostShortUrlOutput(input.Origin);
+
+    return urlOutput;
+})
+.WithName("PostURL")
+.WithOpenApi(); ;
 
 app.Run();
